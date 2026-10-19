@@ -5,9 +5,17 @@ A local web app that turns one raw screen recording into a finished video. It cl
 ## Requirements
 
 - macOS with Node.js 24 or newer
-- ffmpeg (`brew install ffmpeg`)
+- ffmpeg, installed with [Homebrew](https://brew.sh) (`brew install ffmpeg`)
 - [Claude Code](https://claude.com/claude-code), signed in. It rewrites the script.
 - An ElevenLabs API key and a voice ID
+
+## Costs
+
+Prices checked on 2026-10-19.
+
+- **Claude:** Claude Code needs a paid plan. [Pro](https://claude.com/pricing) is $20 a month ($17 a month billed yearly). The free plan does not include Claude Code.
+- **ElevenLabs:** the [free plan](https://elevenlabs.io/pricing) (10k credits a month) is enough to try the app with a stock voice. For your own cloned voice or commercial use, you need Starter ($6 a month, 30k credits) or higher.
+- Everything else is free. Remotion is free for individuals; see [License](#license).
 
 ## Setup
 

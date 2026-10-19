@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- A screen with the wordmark's pencil-blue cue dot in its corner, in the page's ink, paper and pencil.
+       Edges sit on even units, so they land on whole pixels at 16 px. -->
+  <rect x="1" y="1" width="30" height="30" rx="7" fill="#232528"/>
+  <rect x="6" y="8" width="20" height="16" rx="2" fill="#FBFBF8"/>
+  <circle cx="24" cy="10" r="5" fill="#2443C4" stroke="#232528" stroke-width="2"/>
+</svg>

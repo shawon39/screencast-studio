@@ -1,0 +1,760 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Screencast Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#ECEEEA;   /* the desk */
+  --sheet:#FBFBF8;   /* the page / the timeline */
+  --ink:#232528;     /* text, primary buttons, finished progress */
+  --lead:#5E6265;    /* secondary text, what you originally said */
+  --rule:#D2D5CF;    /* ticks, borders */
+  --pencil:#2443C4;  /* every edit mark, cue and the playhead */
+  --wash:rgba(36,67,196,.07);
+  --screen:#1C1E20;  /* around the video */
+  --brick:#B42318;   /* failures only */
+  --sans:"IBM Plex Sans",system-ui,-apple-system,sans-serif;
+  --script:"Courier Prime","Courier New",monospace;
+  --gutter:48px;
+  --ease:cubic-bezier(.3,.7,.2,1);
+}
+*{box-sizing:border-box}
+html{background:var(--paper)}
+body{margin:0;background:var(--paper);color:var(--ink);font:400 16px/1.5 var(--sans);-webkit-font-smoothing:antialiased;padding-bottom:96px}
+button,input{font:inherit;color:inherit}
+h1,h2,h3,p{margin:0}
+:focus-visible{outline:2px solid var(--pencil);outline-offset:2px;border-radius:3px}
+.wrap{max-width:1200px;margin:0 auto;padding:0 var(--gutter)}
+[hidden]{display:none!important}
+.tnum{font-variant-numeric:tabular-nums}
+
+/* ---------- buttons ---------- */
+.btn{display:inline-flex;align-items:center;gap:8px;border-radius:6px;padding:11px 18px;font-weight:500;font-size:15px;line-height:1.2;cursor:pointer;text-decoration:none;border:1px solid transparent;background:none}
+.btn.primary{background:var(--ink);color:var(--sheet)}
+.btn.primary:hover{background:#3A3D41}
+.btn.ghost{border-color:var(--rule);color:var(--ink);background:transparent}
+.btn.ghost:hover{border-color:var(--lead)}
+.link{background:none;border:0;padding:0;color:var(--pencil);text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+
+/* ---------- top bar ---------- */
+.bar{display:flex;align-items:baseline;justify-content:space-between;gap:24px;padding-top:28px;padding-bottom:36px}
+.mark{font:700 19px/1 var(--script);color:var(--ink);text-decoration:none;letter-spacing:-.01em}
+.cue-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--pencil);margin-left:3px;vertical-align:.6em}
+.narrator{color:var(--lead);font-size:14px}
+
+/* ---------- home: the empty timeline ---------- */
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.tl{position:relative;background:var(--sheet);border:1px solid var(--rule);border-radius:10px;overflow:hidden;transition:border-color .2s}
+.tl.over{border-color:var(--pencil)}
+.tl.over .lane{background-color:var(--wash)}
+.tl-head,.trk{display:grid;grid-template-columns:56px 1fr}
+.tl-head{height:30px;border-bottom:1px solid var(--rule)}
+.tl-head>span{border-right:1px solid var(--rule)}
+.tl-ruler{position:relative;
+  background-image:linear-gradient(to right,var(--lead) 1px,transparent 1px),linear-gradient(to right,var(--rule) 1px,transparent 1px);
+  background-size:10% 100%,calc(100%/60) 7px;background-position:0 0,0 100%;background-repeat:repeat-x}
+.tl-ruler span{position:absolute;top:5px;font-size:11px;color:var(--lead);padding-left:5px;font-variant-numeric:tabular-nums}
+.trk{height:128px;border-bottom:1px solid var(--rule)}
+.trk.a{height:68px;border-bottom:0}
+.trk-name{font-size:12px;font-weight:500;color:var(--lead);padding:10px 0 0 16px;border-right:1px solid var(--rule)}
+.lane{position:relative;background-image:linear-gradient(to right,rgba(35,37,40,.045) 1px,transparent 1px);background-size:10% 100%;transition:background-color .2s}
+.tl-call{position:absolute;top:30px;left:56px;right:0;height:128px;display:grid;place-content:center;text-align:center;padding:16px}
+.call-main{font-size:26px;font-weight:500;line-height:1.2;letter-spacing:-.01em;margin-bottom:8px}
+.call-sub{color:var(--lead)}
+.clip{position:absolute;left:0;top:9px;bottom:9px;width:0;border-radius:4px;border:1px solid #9DAEE4;background-color:#DCE2F5;overflow:hidden;transition:width .8s var(--ease)}
+.clip.v{background-image:repeating-linear-gradient(to right,transparent 0 71px,rgba(36,67,196,.22) 71px 72px)}
+.clip-name{position:absolute;left:10px;top:7px;font-size:13px;font-weight:500;white-space:nowrap}
+.clip-len{position:absolute;right:10px;top:7px;font-size:13px;color:var(--lead);font-variant-numeric:tabular-nums}
+.clip svg{position:absolute;inset:6px 0;width:100%;height:calc(100% - 12px)}
+.start{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:20px 32px;align-items:end;margin-top:28px}
+.start .facts{grid-column:1/-1;color:var(--lead)}
+.field label{display:block;font-size:14px;font-weight:500;margin-bottom:6px}
+.field input{width:100%;padding:11px 14px;border:1px solid var(--rule);border-radius:6px;background:var(--sheet)}
+.field input::placeholder{color:#8A8E90}
+.check{display:flex;gap:10px;align-items:center;font-size:15px}
+.check input{width:17px;height:17px;accent-color:var(--ink)}
+.start-actions{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.recent{margin-top:72px}
+.recent h2{font-size:20px;font-weight:500;margin-bottom:12px}
+.recent table{width:100%;border-collapse:collapse;font-size:15px}
+.recent th{font-size:13px;font-weight:500;color:var(--lead);text-align:left;padding:8px 12px 8px 0;border-bottom:1px solid var(--rule)}
+.recent td{padding:13px 12px 13px 0;border-bottom:1px solid var(--rule);font-variant-numeric:tabular-nums}
+.recent td a{color:var(--ink);text-decoration:none;font-weight:500}
+.recent td a:hover{text-decoration:underline;text-underline-offset:3px}
+.recent .waiting{color:var(--pencil)}
+
+/* ---------- job header + stage ruler ---------- */
+.crumbs a{color:var(--lead);font-size:14px;text-decoration:none}
+.crumbs a:hover{color:var(--ink)}
+.job-title{font-size:31px;font-weight:500;line-height:1.15;letter-spacing:-.015em;margin-top:10px}
+.job-meta{color:var(--lead);margin-top:6px}
+.ruler{position:relative;margin:36px 0 44px;--p:0}
+.ticks{height:12px;background-image:linear-gradient(to right,var(--rule) 1px,transparent 1px);background-size:calc(100%/48) 100%;border-bottom:1px solid var(--rule)}
+.fill{position:absolute;left:0;top:10px;height:3px;width:calc(var(--p) * 100%);background:var(--ink);transition:width 1s var(--ease)}
+.playhead{position:absolute;top:-9px;height:24px;left:calc(var(--p) * 100%);width:2px;margin-left:-1px;background:var(--pencil);transition:left 1s var(--ease)}
+.playhead::before{content:"";position:absolute;top:0;left:50%;width:12px;height:11px;transform:translateX(-50%);background:var(--pencil);clip-path:polygon(0 0,100% 0,100% 55%,50% 100%,0 55%)}
+.phases{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(6,1fr)}
+.phases li{border-left:1px solid var(--ink);margin-top:-13px;padding:21px 10px 0}
+.phases li:last-child{border-right:1px solid var(--ink)}
+.ph{display:block;font-size:15px;font-weight:500}
+.pt{display:block;font-size:13px;color:var(--lead);font-variant-numeric:tabular-nums;min-height:1.5em}
+.phases li.wait .ph{color:var(--lead);font-weight:400}
+.phases li.now .ph,.phases li.you .ph{color:var(--pencil)}
+.phases li.fail .ph,.phases li.fail .pt{color:var(--brick)}
+
+/* ---------- working ---------- */
+.work{max-width:680px}
+.now{font-size:28px;font-weight:500;line-height:1.2;letter-spacing:-.01em;margin-bottom:8px}
+.now-sub{color:var(--lead);font-size:17px;margin-bottom:28px}
+.log{list-style:none;margin:0 0 32px;padding:0 0 0 16px;border-left:2px solid var(--rule);font-size:14px;color:var(--lead)}
+.log li{display:grid;grid-template-columns:76px 1fr;padding:3px 0}
+.log li:last-child{color:var(--ink)}
+.quiet{color:var(--lead);font-size:14px}
+
+/* ---------- review: the marked-up script ---------- */
+.review{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:48px;align-items:start}
+.sheet{background:var(--sheet);border:1px solid var(--rule);border-radius:3px;padding:40px 44px 28px;box-shadow:0 18px 30px -26px rgba(35,37,40,.45)}
+.sheet h2{font-size:25px;font-weight:500;letter-spacing:-.01em;margin-bottom:8px}
+.sheet .how{color:var(--lead);max-width:60ch;margin-bottom:32px}
+.how .eg-cue{color:var(--ink)}
+.lines{list-style:none;margin:0;padding:0}
+.line{display:grid;grid-template-columns:64px minmax(0,1fr) auto;gap:0 20px;padding:12px 0 14px}
+.tc{justify-self:start;align-self:start;background:none;border:0;padding:5px 0 0;font-size:13px;color:var(--lead);cursor:pointer;font-variant-numeric:tabular-nums}
+.tc:hover,.line.playing .tc{color:var(--pencil);text-decoration:underline;text-underline-offset:3px}
+.clean{font:400 17px/1.6 var(--script);color:var(--ink);border-radius:3px;outline-offset:4px;max-width:62ch}
+.clean:hover{background:var(--wash)}
+.clean:focus{outline:2px solid var(--pencil);background:transparent}
+.said{font-style:italic;font-size:14px;line-height:1.55;color:var(--lead);margin-top:4px;max-width:70ch}
+.said s{text-decoration-color:var(--pencil);text-decoration-thickness:2px;color:#7D8184}
+.cue{text-decoration:underline;text-decoration-color:var(--pencil);text-decoration-thickness:2px;text-underline-offset:4px}
+.cue::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--pencil);margin-right:4px;vertical-align:.18em}
+.toggle{justify-self:end;align-self:start;background:none;border:0;padding:3px 0;font-size:13px;color:var(--lead);cursor:pointer}
+.toggle:hover{color:var(--ink);text-decoration:underline;text-underline-offset:3px}
+.line.dropped .clean{display:none}
+.line.dropped .said{font-size:15px;margin-top:2px}
+.line.dropped .said s{color:#8A8E90}
+.note{font-size:14px;color:var(--pencil);margin-top:4px;max-width:60ch}
+.line:not(.dropped) .note.drop-note{display:none}
+.warn{font-size:14px;color:var(--brick);margin-top:4px}
+.more{color:var(--lead);font-size:14px;padding:18px 0 4px 84px;border-top:1px dashed var(--rule);margin-top:10px}
+.side{position:sticky;top:24px}
+.frame{position:relative;aspect-ratio:16/9;border-radius:6px;overflow:hidden;background:var(--screen);container-type:inline-size}
+.frame>svg{display:block;width:100%;height:100%}
+.frame .stamp{position:absolute;left:8px;top:8px;background:rgba(28,30,32,.82);color:#fff;font-size:12px;padding:2px 7px;border-radius:4px;font-variant-numeric:tabular-nums}
+.cap{font-size:13px;color:var(--lead);margin-top:8px}
+.side dl{display:grid;grid-template-columns:1fr auto;margin:24px 0;font-size:15px}
+.side dt,.side dd{margin:0;padding:7px 0;border-bottom:1px solid var(--rule)}
+.side dd{text-align:right;font-variant-numeric:tabular-nums}
+.side .btn{width:100%;justify-content:center}
+.side .next{font-size:14px;color:var(--lead);margin-top:12px}
+
+/* ---------- done: the screening ---------- */
+.screening{background:var(--screen);border-radius:10px;padding:28px}
+.screening .frame{border-radius:4px;max-width:960px;margin:0 auto}
+.play{position:absolute;left:50%;top:50%;width:68px;height:68px;margin:-34px 0 0 -34px;border-radius:50%;border:0;background:rgba(28,30,32,.78);cursor:pointer}
+.play::after{content:"";position:absolute;left:27px;top:21px;border-style:solid;border-width:13px 0 13px 21px;border-color:transparent transparent transparent #fff}
+.controls{display:flex;align-items:center;gap:14px;max-width:960px;margin:14px auto 0;color:#C9CCCF;font-size:13px;font-variant-numeric:tabular-nums}
+.scrub{flex:1;height:3px;background:#45484C;border-radius:2px;position:relative}
+.scrub::after{content:"";position:absolute;left:0;top:0;bottom:0;width:0%;background:#fff}
+.sub{position:absolute;left:50%;bottom:5.7%;transform:translateX(-50%);max-width:76%;width:max-content;text-align:center;color:#fff;font:600 1.875cqw/1.36 var(--sans);letter-spacing:-.005em}
+.sub span{display:inline-block;padding:0 .16em;margin:0 -.04em;border-radius:.2em;text-shadow:.053em 0 0 rgba(18,20,22,.88),-.053em 0 0 rgba(18,20,22,.88),0 .053em 0 rgba(18,20,22,.88),0 -.053em 0 rgba(18,20,22,.88),.037em .037em 0 rgba(18,20,22,.88),-.037em .037em 0 rgba(18,20,22,.88),.037em -.037em 0 rgba(18,20,22,.88),-.037em -.037em 0 rgba(18,20,22,.88),0 0 .055em rgba(18,20,22,.8),0 .055em .33em rgba(0,0,0,.5)}
+.sub .lit{background:var(--pencil);text-shadow:none;box-shadow:0 .11em .39em rgba(0,0,0,.35)}
+.done-body{max-width:720px;margin-top:32px}
+.verdict{font-size:19px;line-height:1.55}
+.verdict b{font-weight:600}
+.actions{display:flex;flex-wrap:wrap;gap:12px;margin:28px 0}
+details{border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);padding:14px 0}
+summary{cursor:pointer;font-weight:500}
+details ul{margin:12px 0 4px;padding-left:20px;color:var(--ink)}
+details li{padding:3px 0}
+details li::marker{color:var(--pencil)}
+.again{display:inline-block;margin-top:20px}
+
+/* ---------- error ---------- */
+.fault{max-width:640px;border-left:3px solid var(--brick);padding:4px 0 4px 24px}
+.fault h2{font-size:25px;font-weight:500;margin-bottom:12px}
+.fault p{margin-bottom:10px}
+.fault .btns{display:flex;gap:12px;margin-top:22px}
+
+/* ---------- video look (mockup only) ---------- */
+.look h1{font-size:31px;font-weight:500;letter-spacing:-.015em}
+.look .lede{color:var(--lead);margin:8px 0 32px;max-width:62ch}
+.reel{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px}
+.reel figure{margin:0}
+.reel .frame{box-shadow:0 0 0 1px var(--rule)}
+.reel figcaption{font-size:14px;color:var(--lead);margin-top:10px;max-width:42ch}
+.reel figcaption b{color:var(--ink);font-weight:500;display:block}
+.card{position:absolute;inset:0;background:#ECEEEA;color:#232528;padding:7cqw 7.5cqw;display:flex;flex-direction:column;justify-content:center}
+.card .topic{font-size:2.6cqw;color:#5E6265;margin-bottom:1.6cqw}
+.card .title{font-size:6.1cqw;font-weight:600;line-height:1.08;letter-spacing:-.02em;max-width:16ch}
+.card .rule{height:.55cqw;width:38%;background:#2443C4;margin-top:3.4cqw}
+.card .by{position:absolute;left:7.5cqw;bottom:6cqw;font-size:2.4cqw;font-weight:500}
+.card .logo{position:absolute;right:7.5cqw;bottom:5.4cqw;width:7cqw;height:7cqw;border:.25cqw dashed #9A9EA1;border-radius:1cqw;display:grid;place-items:center;font-size:1.7cqw;color:#5E6265}
+.card.out .title{font-size:5.2cqw;max-width:18ch}
+.card.out .topic{margin:2.2cqw 0 0}
+
+/* ---------- mockup switcher (not part of the app) ---------- */
+.mock{position:fixed;right:16px;bottom:16px;z-index:10;display:flex;flex-wrap:wrap;gap:4px;align-items:center;background:#fff;border:1px dashed #8A8E90;border-radius:8px;padding:6px 8px;font-size:13px;max-width:calc(100vw - 32px)}
+.mock span{color:var(--lead);padding:0 6px 0 2px}
+.mock button{border:0;background:none;padding:4px 8px;border-radius:4px;cursor:pointer}
+.mock button:hover{background:var(--paper)}
+.mock button.on{background:var(--ink);color:#fff}
+
+@media (max-width:1100px){
+  .review{grid-template-columns:1fr}
+  .side{position:static;order:-1;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0 24px}
+  .side .frame,.side .cap{grid-column:1}
+  .side dl{grid-column:2;grid-row:1/3;margin:0}
+  .side .btn,.side .next{grid-column:1/-1}
+  .side .btn{margin-top:20px}
+}
+@media (max-width:900px){
+  .reel{grid-template-columns:1fr;max-width:560px}
+}
+@media (max-width:640px){
+  :root{--gutter:16px}
+  .call-main{font-size:21px}
+  .tl-head,.trk{grid-template-columns:40px 1fr}
+  .tl-call{left:40px}
+  .trk-name{padding-left:10px}
+  .tl-ruler span:nth-child(even){display:none}
+  .start{grid-template-columns:1fr}
+  .recent .made{display:none}
+  .job-title{font-size:25px}
+  .ph{font-size:13px}
+  .pt{display:none}
+  .phases li{padding:19px 4px 0 6px}
+  .now{font-size:23px}
+  .sheet{padding:24px 18px 20px}
+  .line{grid-template-columns:1fr auto;gap:0 12px}
+  .line .tc{grid-column:1;grid-row:1}
+  .line .toggle{grid-column:2;grid-row:1}
+  .line .body{grid-column:1/-1}
+  .more{padding-left:0}
+  .side{display:block}
+  .side dl{margin:20px 0}
+  .screening{padding:12px;border-radius:8px}
+  .verdict{font-size:17px}
+}
+@media (prefers-reduced-motion:reduce){
+  *{transition:none!important;animation:none!important}
+}
+</style>
+</head>
+<body>
+
+<!-- One drawing of a recorded screen, reused by every video frame in the mockup -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <pattern id="dots" width="12" height="12" patternUnits="userSpaceOnUse"><circle cx="1.5" cy="1.5" r=".9" fill="#C6CBD3"/></pattern>
+    <symbol id="screen" viewBox="0 0 640 360">
+      <g font-family="IBM Plex Sans, sans-serif">
+      <rect width="640" height="360" fill="#F4F5F7"/>
+      <rect width="640" height="30" fill="#fff"/>
+      <rect x="12" y="9" width="22" height="12" rx="3" fill="#7F90CC"/>
+      <rect x="44" y="11" width="70" height="8" rx="4" fill="#E3E6EB"/>
+      <rect x="122" y="11" width="44" height="8" rx="4" fill="#E3E6EB"/>
+      <rect x="498" y="8" width="130" height="14" rx="7" fill="#EEF0F3"/>
+      <line x1="0" y1="30.5" x2="640" y2="30.5" stroke="#E1E4E8"/>
+      <rect y="31" width="640" height="27" fill="#fff"/>
+      <text x="14" y="49" font-size="10.5" font-weight="600" fill="#2B2F36">Flow Builder</text>
+      <text x="88" y="49" font-size="9.5" fill="#6B7280">Case intake</text>
+      <rect x="532" y="37" width="44" height="15" rx="3" fill="#fff" stroke="#C9CED6"/>
+      <text x="543" y="48" font-size="8.5" fill="#2B2F36">Save</text>
+      <rect x="582" y="37" width="48" height="15" rx="3" fill="#3D5BD9"/>
+      <text x="589" y="48" font-size="8.5" fill="#fff">Activate</text>
+      <line x1="0" y1="58.5" x2="640" y2="58.5" stroke="#E1E4E8"/>
+      <rect y="59" width="134" height="301" fill="#fff"/>
+      <line x1="134.5" y1="59" x2="134.5" y2="360" stroke="#E1E4E8"/>
+      <text x="14" y="80" font-size="9" font-weight="600" fill="#2B2F36">Elements</text>
+      <g fill="#E3E6EB"><rect x="32" y="94" width="76" height="7" rx="3.5"/><rect x="32" y="116" width="62" height="7" rx="3.5"/><rect x="32" y="138" width="84" height="7" rx="3.5"/><rect x="32" y="160" width="58" height="7" rx="3.5"/><rect x="32" y="182" width="70" height="7" rx="3.5"/></g>
+      <rect x="14" y="92" width="11" height="11" rx="2" fill="#5B8DEF"/><rect x="14" y="114" width="11" height="11" rx="2" fill="#D16D96"/><rect x="14" y="136" width="11" height="11" rx="2" fill="#E0A23B"/><rect x="14" y="158" width="11" height="11" rx="2" fill="#4E9B6F"/><rect x="14" y="180" width="11" height="11" rx="2" fill="#8C7BD1"/>
+      <rect x="135" y="59" width="505" height="301" fill="url(#dots)"/>
+      <circle cx="388" cy="92" r="13" fill="#4E9B6F"/>
+      <path d="M383 86 l11 6 l-11 6z" fill="#fff"/>
+      <text x="408" y="95" font-size="9" fill="#4A5160">Screen Flow</text>
+      <line x1="388" y1="105" x2="388" y2="138" stroke="#9AA3AE" stroke-width="1.5"/>
+      <rect x="326" y="138" width="124" height="42" rx="6" fill="#fff" stroke="#C9CED6"/>
+      <rect x="335" y="148" width="22" height="22" rx="4" fill="#5B8DEF"/>
+      <text x="364" y="157" font-size="9.5" font-weight="600" fill="#2B2F36">Case details</text>
+      <text x="364" y="170" font-size="8.5" fill="#6B7280">Screen</text>
+      <line x1="388" y1="180" x2="388" y2="212" stroke="#9AA3AE" stroke-width="1.5"/>
+      <rect x="326" y="212" width="124" height="42" rx="6" fill="#fff" stroke="#3D5BD9" stroke-width="1.5"/>
+      <rect x="335" y="222" width="22" height="22" rx="4" fill="#D16D96"/>
+      <text x="364" y="231" font-size="9.5" font-weight="600" fill="#2B2F36">Create case</text>
+      <text x="364" y="244" font-size="8.5" fill="#6B7280">Create Records</text>
+      <line x1="388" y1="254" x2="388" y2="284" stroke="#9AA3AE" stroke-width="1.5"/>
+      <circle cx="388" cy="292" r="8" fill="#9AA3AE"/>
+      <path d="M462 226 l0 17 l4.5 -4.2 l3.2 7 l2.6 -1.2 l-3.1 -6.8 l6 -.4z" fill="#1F2328" stroke="#fff" stroke-width="1.2"/>
+      </g>
+    </symbol>
+  </defs>
+</svg>
+
+<header class="bar wrap">
+  <a class="mark" href="#" data-go="home">screencast studio<span class="cue-dot" aria-hidden="true"></span></a>
+  <p class="narrator">Narrator: your voice clone</p>
+</header>
+
+<main>
+
+<!-- ============ HOME ============ -->
+<section id="home" class="wrap">
+  <h1 class="sr">New video</h1>
+  <div class="tl" id="tl">
+    <div class="tl-head"><span></span><div class="tl-ruler" id="tlRuler"></div></div>
+    <div class="trk"><span class="trk-name">V1</span><div class="lane" id="laneV"></div></div>
+    <div class="trk a"><span class="trk-name">A1</span><div class="lane" id="laneA"></div></div>
+    <div class="tl-call" id="tlCall">
+      <p class="call-main">Drop a raw recording here</p>
+      <p class="call-sub">or <button class="link" id="pick" type="button">choose a file</button>. MP4 or MKV straight from OBS works.</p>
+    </div>
+  </div>
+
+  <form class="start" id="startForm" hidden>
+    <p class="facts" id="facts">flow-basics-raw.mp4 is 6:48 long, 1920 × 1080 at 30 fps.</p>
+    <div class="field">
+      <label for="title">Title</label>
+      <input id="title" placeholder="Leave blank and Claude writes one from the script">
+    </div>
+    <label class="check"><input type="checkbox"> Add captions to the video</label>
+    <div class="start-actions">
+      <button class="btn primary" type="submit">Start editing</button>
+      <button class="btn ghost" type="button" id="swap">Choose another file</button>
+    </div>
+  </form>
+
+  <section class="recent">
+    <h2>Earlier videos</h2>
+    <table>
+      <thead><tr><th>Title</th><th class="made">Made</th><th>Raw</th><th>Final</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td><a href="#" data-go="review">Report types explained</a></td><td class="made">15 Oct</td><td>8:10</td><td></td><td class="waiting">Waiting for your review</td></tr>
+        <tr><td><a href="#" data-go="done">Permission sets in five minutes</a></td><td class="made">9 Oct</td><td>9:02</td><td>5:40</td><td>Done</td></tr>
+        <tr><td><a href="#" data-go="done">Record-triggered flow basics</a></td><td class="made">3 Oct</td><td>7:31</td><td>4:55</td><td>Done</td></tr>
+      </tbody>
+    </table>
+  </section>
+</section>
+
+<!-- ============ JOB ============ -->
+<section id="job" class="wrap" hidden>
+  <nav class="crumbs"><a href="#" data-go="home">All videos</a></nav>
+  <h1 class="job-title" id="jobTitle">flow-basics-raw.mp4</h1>
+  <p class="job-meta" id="jobMeta">6:48 raw recording, started at 12:31</p>
+
+  <div class="ruler" id="ruler">
+    <div class="ticks"></div>
+    <div class="fill"></div>
+    <ol class="phases" id="phases">
+      <li><span class="ph">Listen</span><span class="pt"></span></li>
+      <li><span class="ph">Rewrite</span><span class="pt"></span></li>
+      <li><span class="ph">Review</span><span class="pt"></span></li>
+      <li><span class="ph">Voice</span><span class="pt"></span></li>
+      <li><span class="ph">Cut</span><span class="pt"></span></li>
+      <li><span class="ph">Finish</span><span class="pt"></span></li>
+    </ol>
+    <div class="playhead" aria-hidden="true"></div>
+  </div>
+
+  <!-- working -->
+  <div class="work" id="paneWork" aria-live="polite">
+    <p class="now" id="nowMain">Listening to your recording</p>
+    <p class="now-sub" id="nowSub">Reading the file</p>
+    <ol class="log" id="log"></ol>
+    <p class="quiet">You can close this tab. The work keeps going, and the video waits for you at review.</p>
+  </div>
+
+  <!-- review -->
+  <div class="review" id="paneReview" hidden>
+    <article class="sheet">
+      <h2>Review the script</h2>
+      <p class="how">Click any line to change it. Struck words are what Claude took out. Words with a <span class="cue eg-cue">dot</span> are cues: the video waits for them, so keep them.</p>
+      <ol class="lines" id="lines">
+        <li class="line" data-at="00:01.2">
+          <button class="tc" type="button">00:01.2</button>
+          <div class="body">
+            <p class="clean" contenteditable="true" spellcheck="true" data-words="11">Today we're going to build a screen flow that creates a case.</p>
+            <p class="said"><s>so uhm</s> today we <s>gonna</s> build a screen flow that, <s>that</s> creates a case</p>
+          </div>
+          <button class="toggle" type="button">Drop</button>
+        </li>
+        <li class="line" data-at="00:07.9">
+          <button class="tc" type="button">00:07.9</button>
+          <div class="body">
+            <p class="clean" contenteditable="true" spellcheck="true" data-words="12">First, go to Setup and search for Flows in the Quick Find box.</p>
+            <p class="said">first go to setup and <s>uh</s> search flows in the quick find box</p>
+          </div>
+          <button class="toggle" type="button">Drop</button>
+        </li>
+        <li class="line" data-at="00:15.4">
+          <button class="tc" type="button">00:15.4</button>
+          <div class="body">
+            <p class="clean" contenteditable="true" spellcheck="true" data-words="6">Now <span class="cue" title="Video waits here: the click at 00:16.1">click here</span> on New Flow.</p>
+            <p class="said">now click here on new flow</p>
+          </div>
+          <button class="toggle" type="button">Drop</button>
+        </li>
+        <li class="line" data-at="00:19.0">
+          <button class="tc" type="button">00:19.0</button>
+          <div class="body">
+            <p class="clean" contenteditable="true" spellcheck="true" data-words="3"><span class="cue" title="Video waits here: the click at 00:22.6">Select</span> Screen Flow.</p>
+            <p class="said"><s>and we select the the screen flow, sorry,</s> select screen flow</p>
+          </div>
+          <button class="toggle" type="button">Drop</button>
+        </li>
+        <li class="line dropped" data-at="00:24.3">
+          <button class="tc" type="button">00:24.3</button>
+          <div class="body">
+            <p class="clean" contenteditable="true" spellcheck="true" data-words="9">Wait, it's loading. It's slow today.</p>
+            <p class="said"><s>wait it's loading, it's, hmm, okay it's slow today</s></p>
+            <p class="note drop-note">Dropped: nothing to follow here. The page load under it plays at 3× with no voice.</p>
+          </div>
+          <button class="toggle" type="button">Keep</button>
+        </li>
+        <li class="line" data-at="00:33.0">
+          <button class="tc" type="button">00:33.0</button>
+          <div class="body">
+            <p class="clean" contenteditable="true" spellcheck="true" data-words="11">Drag a Screen element onto the canvas and give it a label.</p>
+            <p class="said">drag a screen element onto the canvas, and <s>uh</s> give it a label</p>
+          </div>
+          <button class="toggle" type="button">Drop</button>
+        </li>
+        <li class="line" data-at="00:41.7">
+          <button class="tc" type="button">00:41.7</button>
+          <div class="body">
+            <p class="clean" contenteditable="true" spellcheck="true" data-words="8"><span class="cue" title="Video waits here: typing starts at 00:42.3">Type</span> Case Subject <span class="cue" title="Video waits here: the click at 00:43.9">here</span>, in the label field.</p>
+            <p class="said">type case subject here in the label field</p>
+          </div>
+          <button class="toggle" type="button">Drop</button>
+        </li>
+        <li class="line dropped" data-at="00:49.5">
+          <button class="tc" type="button">00:49.5</button>
+          <div class="body">
+            <p class="clean" contenteditable="true" spellcheck="true" data-words="8">So then we, no, let me do that again.</p>
+            <p class="said"><s>so then we, no, let me do that again</s></p>
+            <p class="note drop-note">Dropped: a retake. The next line says it properly.</p>
+          </div>
+          <button class="toggle" type="button">Keep</button>
+        </li>
+        <li class="line" data-at="00:52.0">
+          <button class="tc" type="button">00:52.0</button>
+          <div class="body">
+            <p class="clean" contenteditable="true" spellcheck="true" data-words="9">Then add a Create Records element and <span class="cue" title="Video waits here: the click at 00:58.4">click</span> Done.</p>
+            <p class="said">then add a create records element and click done</p>
+          </div>
+          <button class="toggle" type="button">Drop</button>
+        </li>
+      </ol>
+      <p class="more">32 more lines continue to 6:48. (The mockup shows the first nine.)</p>
+    </article>
+
+    <aside class="side">
+      <div class="frame">
+        <svg viewBox="0 0 640 360"><use href="#screen"/></svg>
+        <span class="stamp" id="stamp">00:01.2</span>
+      </div>
+      <p class="cap">Click a timecode to play the raw recording from there.</p>
+      <dl>
+        <dt>Raw length</dt><dd>6:48</dd>
+        <dt>Lines</dt><dd>41</dd>
+        <dt>Dropped</dt><dd id="dropCount">6</dd>
+        <dt>Cues</dt><dd>17</dd>
+      </dl>
+      <button class="btn primary" type="button" id="approve">Approve script</button>
+      <p class="next">Next, your voice clone reads it and the video is cut to match. About 6 minutes.</p>
+    </aside>
+  </div>
+
+  <!-- done -->
+  <div id="paneDone" hidden>
+    <div class="screening">
+      <div class="frame">
+        <svg viewBox="0 0 640 360"><use href="#screen"/></svg>
+        <p class="sub"><span>Then</span><span>add</span><span>a</span><span class="lit">Create</span><span>Records</span><span>element</span><span>and</span><span>click</span><span>Done.</span></p>
+        <button class="play" type="button" aria-label="Play the finished video"></button>
+      </div>
+      <div class="controls"><span>0:00</span><div class="scrub"></div><span>4:12</span></div>
+    </div>
+    <div class="done-body">
+      <p class="verdict">The video is <b>4:12</b> long, cut from 6:48. All 17 cues land within 150 ms of their click. Loudness is −14.0 LUFS with peaks at −1.3 dBTP. It used 4,480 voice characters.</p>
+      <div class="actions">
+        <a class="btn primary" href="#">Download video</a>
+        <a class="btn ghost" href="#">Subtitles (.srt)</a>
+        <a class="btn ghost" href="#">Thumbnail</a>
+        <button class="btn ghost" type="button">Show in Finder</button>
+      </div>
+      <details>
+        <summary>What changed</summary>
+        <ul>
+          <li>6 lines dropped: 3 retakes and 3 with nothing to follow</li>
+          <li>19 still pauses shortened to 0.4 s, saving 1:31</li>
+          <li>4 page loads sped up 2× to 4×, with no voice</li>
+          <li>11 pieces held or slowed, up to 1.2 s, so the voice could finish</li>
+          <li>Fastest speed-up while you speak: 1.4×</li>
+        </ul>
+      </details>
+      <a class="link again" href="#" data-go="review">Change the script and render again</a>
+    </div>
+  </div>
+
+  <!-- error -->
+  <div id="paneError" hidden>
+    <div class="fault" role="alert">
+      <h2>Voice stopped at line 24 of 35</h2>
+      <p>ElevenLabs refused the request because this API key's credit quota is used up. Raise the quota for the key on the ElevenLabs API keys page, then retry.</p>
+      <p class="quiet">Lines 1 to 23 are saved. A retry only records what is left.</p>
+      <div class="btns">
+        <button class="btn primary" type="button" data-go="resume-voice">Retry voice</button>
+        <button class="btn ghost" type="button">Show the log</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ VIDEO LOOK (mockup only) ============ -->
+<section id="look" class="wrap look" hidden>
+  <h1>How the finished video looks</h1>
+  <p class="lede">The three parts of every output file at 1920 × 1080. Colors, font, logo and outro text come from your brand settings; these are the defaults.</p>
+  <div class="reel">
+    <figure>
+      <div class="frame">
+        <div class="card">
+          <p class="topic">Salesforce Flow Builder</p>
+          <p class="title">Build a screen flow that creates a case</p>
+          <div class="rule"></div>
+          <p class="by">Shakhawat Hossain</p>
+          <div class="logo">logo</div>
+        </div>
+      </div>
+      <figcaption><b>Intro, 3.5 s</b>The title rises in, the blue rule draws left to right, then the card dissolves into the first screen.</figcaption>
+    </figure>
+    <figure>
+      <div class="frame">
+        <svg viewBox="0 0 640 360"><use href="#screen"/></svg>
+        <p class="sub"><span>Now</span><span class="lit">click</span><span>here</span><span>on</span><span>New</span><span>Flow.</span></p>
+      </div>
+      <figcaption><b>Your screen, re-timed</b>Captions, only when you tick them: small IBM Plex Sans with no box, the word being said lit in blue, two lines at most, timed to the voice and burned in last.</figcaption>
+    </figure>
+    <figure>
+      <div class="frame">
+        <div class="card out">
+          <p class="title">Thanks for watching.</p>
+          <p class="topic">Questions go in the comments.</p>
+          <p class="by">Shakhawat Hossain</p>
+          <div class="logo">logo</div>
+        </div>
+      </div>
+      <figcaption><b>Outro, 5 s</b>The last screen fades to this card while the music, if any, fades out under it.</figcaption>
+    </figure>
+  </div>
+</section>
+
+</main>
+
+<nav class="mock" aria-label="Mockup screens">
+  <span>Mockup</span>
+  <button type="button" data-go="home">Drop</button>
+  <button type="button" data-go="work">Working</button>
+  <button type="button" data-go="review">Review</button>
+  <button type="button" data-go="done">Done</button>
+  <button type="button" data-go="error">Error</button>
+  <button type="button" data-go="look">Video look</button>
+</nav>
+
+<script>
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ---- the six phases a job moves through ---- */
+const PHASES = [
+  {main:'Listening to your recording', took:'0:43', steps:[
+    ['Reading the file','1920 × 1080, 30 fps, 6:48'],
+    ['Converting to a steady 30 fps','So every frame lines up with the audio'],
+    ['Transcribing 6:48 of speech','Every word gets its own timestamp'],
+    ['Finding still screens, page changes and pauses','14 still parts, 22 screen changes, 31 pauses']]},
+  {main:'Cleaning up the script', took:'0:38', steps:[
+    ['Claude is fixing grammar and marking cues','It never adds anything you did not say'],
+    ['Checking the clean script','Word counts, cues and sentence order']]},
+  {main:'Waiting for your review', took:'', steps:[]},
+  {main:'Recording the new voice', took:'1:52', steps:[
+    ['Line 9 of 35','Your voice clone, same settings for every line'],
+    ['Line 35 of 35','Each line flows into the next']]},
+  {main:'Cutting the video to fit the voice', took:'2:41', steps:[
+    ['Planning 41 pieces','Still screens absorb the timing, never your clicks'],
+    ['Rendering piece 23 of 41','Every cue within 150 ms of its click']]},
+  {main:'Adding intro, outro and subtitles', took:'1:16', steps:[
+    ['Rendering the intro and outro','Your title, logo and colors'],
+    ['Setting loudness to −14 LUFS','Two passes, peaks under −1 dBTP'],
+    ['Checking every cue and cut','Fixes and re-renders up to 3 times']]},
+];
+const REVIEW = 2;
+let run = 0;  // bumps on every screen change so old timers stop
+let started = new Date().toTimeString().slice(0, 5);
+
+function setRuler(p, current, state){
+  $('#ruler').style.setProperty('--p', p);
+  $$('#phases li').forEach((li, i) => {
+    li.className = i < current ? 'done' : i === current ? state : 'wait';
+    const t = li.querySelector('.pt');
+    if (i < current) t.textContent = i === REVIEW ? 'Approved' : PHASES[i].took;
+    else if (i === current) t.textContent = state === 'you' ? 'Your turn' : state === 'fail' ? 'Stopped' : 'Working';
+    else t.textContent = '';
+  });
+}
+
+function clock(offsetSec){
+  const d = new Date(Date.now() + offsetSec * 1000);
+  return d.toTimeString().slice(0, 8);
+}
+
+function showPane(id){
+  ['#paneWork','#paneReview','#paneDone','#paneError'].forEach(s => $(s).hidden = s !== id);
+}
+
+function show(screen){
+  run++;
+  $('#home').hidden = screen !== 'home';
+  $('#job').hidden = !['work','review','done','error'].includes(screen);
+  $('#look').hidden = screen !== 'look';
+  $$('.mock button').forEach(b => b.classList.toggle('on', b.dataset.go === screen));
+  window.scrollTo({top: 0});
+}
+
+function titled(on){
+  $('#jobTitle').textContent = on ? 'Build a screen flow that creates a case' : 'flow-basics-raw.mp4';
+  $('#jobMeta').textContent = on ? `From flow-basics-raw.mp4, 6:48 raw, started at ${started}` : `6:48 raw recording, started at ${started}`;
+}
+
+/* Walk phases [from, to) step by step, then call next. */
+function walk(from, to, next){
+  const me = run;
+  const queue = [];
+  for (let i = from; i < to; i++) PHASES[i].steps.forEach((s, k, all) => queue.push({i, k, n: all.length, s}));
+  $('#log').innerHTML = '';
+  showPane('#paneWork');
+  let n = 0;
+  const tick = () => {
+    if (me !== run) return;
+    if (n >= queue.length) return next();
+    const {i, k, n: count, s} = queue[n++];
+    if (i > 1) titled(true);
+    $('#nowMain').textContent = PHASES[i].main;
+    $('#nowSub').textContent = s[1] ? `${s[0]}. ${s[1]}.` : s[0];
+    const li = document.createElement('li');
+    li.innerHTML = `<time class="tnum">${clock(n * 7)}</time><span>${s[0]}</span>`;
+    $('#log').append(li);
+    while ($('#log').children.length > 5) $('#log').firstChild.remove();
+    setRuler((i + (k + 1) / count) / PHASES.length, i, 'now');
+    setTimeout(tick, reduce ? 300 : 950);
+  };
+  tick();
+}
+
+function go(where){
+  if (where === 'home'){ show('home'); return; }
+  if (where === 'work'){ started = new Date().toTimeString().slice(0, 5); show('work'); titled(false); setRuler(0, 0, 'now'); walk(0, REVIEW, () => go('review')); return; }
+  if (where === 'review'){
+    show('review'); titled(true); showPane('#paneReview');
+    setRuler((REVIEW + .12) / PHASES.length, REVIEW, 'you'); return;
+  }
+  if (where === 'render' || where === 'resume-voice'){
+    show('work'); titled(true); setRuler(REVIEW / PHASES.length + .17, REVIEW + 1, 'now');
+    walk(REVIEW + 1, PHASES.length, () => go('done')); return;
+  }
+  if (where === 'done'){ show('done'); titled(true); showPane('#paneDone'); setRuler(1, PHASES.length, 'done'); return; }
+  if (where === 'error'){
+    show('error'); titled(true); showPane('#paneError');
+    setRuler((REVIEW + 1 + .66) / PHASES.length, REVIEW + 1, 'fail'); return;
+  }
+  if (where === 'look'){ show('look'); }
+}
+
+document.addEventListener('click', e => {
+  const t = e.target.closest('[data-go]');
+  if (!t) return;
+  e.preventDefault();
+  go(t.dataset.go);
+});
+
+/* ---- home: the timeline ---- */
+const rulerEl = $('#tlRuler');
+for (let m = 0; m < 10; m++){
+  const s = document.createElement('span');
+  s.style.left = (m * 10) + '%';
+  s.textContent = m + ':00';
+  rulerEl.append(s);
+}
+
+function wave(){
+  let d = '';
+  for (let x = 0; x <= 400; x += 2){
+    const speaking = Math.sin(x / 23) + Math.sin(x / 7.3) * .6 > -.4;
+    const h = speaking ? 4 + Math.abs(Math.sin(x * 1.7) * Math.cos(x / 5.1)) * 16 : 1;
+    d += `M${x} ${22 - h}V${22 + h}`;
+  }
+  return `<svg viewBox="0 0 400 44" preserveAspectRatio="none"><path d="${d}" stroke="#2443C4" stroke-opacity=".5" stroke-width="1.2" fill="none"/></svg>`;
+}
+
+function land(name){
+  const lenPct = 68;  // 6:48 on a 10-minute ruler
+  $('#tlCall').hidden = true;
+  $('#laneV').innerHTML = `<div class="clip v"><span class="clip-name"></span><span class="clip-len">6:48</span></div>`;
+  $('#laneV .clip-name').textContent = name;
+  $('#laneA').innerHTML = `<div class="clip a">${wave()}</div>`;
+  $('#facts').textContent = `${name} is 6:48 long, 1920 × 1080 at 30 fps.`;
+  requestAnimationFrame(() => requestAnimationFrame(() => $$('.clip').forEach(c => c.style.width = lenPct + '%')));
+  $('#startForm').hidden = false;
+}
+function clear(){
+  $('#tlCall').hidden = false;
+  $('#laneV').innerHTML = $('#laneA').innerHTML = '';
+  $('#startForm').hidden = true;
+}
+
+$('#pick').addEventListener('click', () => land('flow-basics-raw.mp4'));
+$('#swap').addEventListener('click', clear);
+$('#startForm').addEventListener('submit', e => { e.preventDefault(); go('work'); });
+const tl = $('#tl');
+['dragenter','dragover'].forEach(ev => tl.addEventListener(ev, e => { e.preventDefault(); tl.classList.add('over'); }));
+['dragleave','drop'].forEach(ev => tl.addEventListener(ev, e => { e.preventDefault(); tl.classList.remove('over'); }));
+tl.addEventListener('drop', e => { const f = e.dataTransfer.files[0]; land(f ? f.name : 'recording.mp4'); });
+
+/* ---- review: play from a timecode, drop or keep, length guard ---- */
+$('#lines').addEventListener('click', e => {
+  const line = e.target.closest('.line');
+  if (!line) return;
+  if (e.target.closest('.tc')){
+    $$('.line').forEach(l => l.classList.toggle('playing', l === line));
+    $('#stamp').textContent = line.dataset.at;
+  }
+  if (e.target.closest('.toggle')){
+    const dropped = line.classList.toggle('dropped');
+    e.target.textContent = dropped ? 'Keep' : 'Drop';
+    $('#dropCount').textContent = 4 + $$('.line.dropped').length;
+  }
+});
+$('#lines').addEventListener('input', e => {
+  const p = e.target.closest('.clean');
+  if (!p) return;
+  const said = +p.dataset.words, now = p.textContent.trim().split(/\s+/).filter(Boolean).length;
+  let w = p.parentElement.querySelector('.warn');
+  const over = Math.abs(now - said) / said > .15;
+  if (over && !w){ w = document.createElement('p'); w.className = 'warn'; p.after(w); }
+  if (over) w.textContent = now > said
+    ? `${now - said} words longer than you said it. The video will slow down here to fit.`
+    : `${said - now} words shorter than you said it. The video will speed up here to fit.`;
+  else if (w) w.remove();
+});
+$('#approve').addEventListener('click', () => go('render'));
+
+show('home');
+</script>
+</body>
+</html>

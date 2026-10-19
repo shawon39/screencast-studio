@@ -1,0 +1,54 @@
+{
+  "durationSec": 50.835,
+  "lines": {
+    "intro": {
+      "text": "Hi everyone. Today we are going to build a screen flow that creates a case.",
+      "start": 1,
+      "end": 5.605
+    },
+    "search": {
+      "text": "First, open Setup, and search for flows in the Quick Find box.",
+      "start": 6.305,
+      "end": 10.591
+    },
+    "click1": {
+      "text": "Now, on the New Flow button, click here.",
+      "start": 11.291,
+      "end": 14.108
+    },
+    "slip": {
+      "text": "Then select the, the, sorry.",
+      "start": 24.108,
+      "end": 26.509
+    },
+    "click2": {
+      "text": "Then select Screen Flow, and to create it, click here.",
+      "start": 27.009,
+      "end": 30.514
+    },
+    "drag": {
+      "text": "Drag a screen element onto the canvas, and give it a label.",
+      "start": 41.314,
+      "end": 44.766
+    },
+    "click3": {
+      "text": "Finally, to save the flow, click here.",
+      "start": 45.466,
+      "end": 48.335
+    }
+  },
+  "clicks": [
+    14.108,
+    30.514,
+    48.335
+  ],
+  "stillPause": {
+    "start": 14.108,
+    "end": 24.108
+  },
+  "pageLoad": {
+    "start": 30.514,
+    "end": 40.514
+  },
+  "slip": "slip"
+}

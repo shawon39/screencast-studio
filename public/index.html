@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Screencast Studio</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/app.css">
+</head>
+<body>
+
+<header class="bar wrap">
+  <a class="mark" href="#/">screencast studio<span class="cue-dot" aria-hidden="true"></span></a>
+  <p class="narrator"><span id="narrator"></span><a href="#/voice">Voice test</a></p>
+</header>
+
+<main>
+
+<section id="home" class="wrap">
+  <h1 class="sr">New video</h1>
+  <div class="tl" id="tl">
+    <div class="tl-head"><span></span><div class="tl-ruler" id="tlRuler"></div></div>
+    <div class="trk"><span class="trk-name">V1</span><div class="lane" id="laneV"></div></div>
+    <div class="trk a"><span class="trk-name">A1</span><div class="lane" id="laneA"></div></div>
+    <div class="tl-call" id="tlCall">
+      <p class="call-main">Drop a raw recording here</p>
+      <p class="call-sub">or <button class="link" id="pick" type="button">choose a file</button>. MP4 or MKV straight from OBS works.</p>
+    </div>
+    <input type="file" id="picker" accept=".mp4,.mkv,.mov,video/mp4,video/x-matroska,video/quicktime" hidden>
+  </div>
+  <p class="drop-error" id="dropError" role="alert" hidden></p>
+
+  <form class="start" id="startForm" hidden>
+    <p class="facts" id="facts"></p>
+    <div class="field">
+      <label for="title">Title</label>
+      <input id="title" maxlength="120" placeholder="Leave blank and Claude writes one from the script">
+    </div>
+    <label class="check"><input type="checkbox" id="subtitles"> Add captions to the video</label>
+    <div class="start-actions">
+      <button class="btn primary" type="submit" id="startBtn" disabled>Start editing</button>
+      <button class="btn ghost" type="button" id="swap">Choose another file</button>
+    </div>
+  </form>
+
+  <section class="recent" id="recent" hidden>
+    <h2>Earlier videos</h2>
+    <table>
+      <thead><tr><th>Title</th><th class="made">Made</th><th>Raw</th><th>Final</th><th>Status</th></tr></thead>
+      <tbody id="recentRows"></tbody>
+    </table>
+  </section>
+</section>
+
+<section id="job" class="wrap" hidden>
+  <nav class="crumbs"><a href="#/">All videos</a></nav>
+  <h1 class="job-title" id="jobTitle"></h1>
+  <p class="job-meta" id="jobMeta"></p>
+
+  <div class="ruler" id="ruler">
+    <div class="ticks"></div>
+    <div class="fill"></div>
+    <ol class="phases" id="phases">
+      <li><span class="ph">Listen</span><span class="pt"></span></li>
+      <li><span class="ph">Rewrite</span><span class="pt"></span></li>
+      <li><span class="ph">Review</span><span class="pt"></span></li>
+      <li><span class="ph">Voice</span><span class="pt"></span></li>
+      <li><span class="ph">Cut</span><span class="pt"></span></li>
+      <li><span class="ph">Finish</span><span class="pt"></span></li>
+    </ol>
+    <div class="playhead" aria-hidden="true"></div>
+  </div>
+
+  <div class="work" id="paneWork" aria-live="polite">
+    <p class="now" id="nowMain"></p>
+    <p class="now-sub" id="nowSub"></p>
+    <ol class="log" id="log"></ol>
+    <p class="quiet" id="closeNote">You can close this tab. The work keeps going, and the video waits for you at review.</p>
+    <button class="btn primary" type="button" id="continueBtn" hidden>Continue</button>
+  </div>
+
+  <div class="review" id="paneReview" hidden>
+    <article class="sheet">
+      <h2>Review the script</h2>
+      <p class="how">Click any line to change it. Struck words are what Claude took out. Words with a <span class="cue eg-cue">dot</span> are cues: the video waits for them, so keep them.</p>
+      <ol class="lines" id="lines"></ol>
+    </article>
+    <aside class="side">
+      <div class="frame">
+        <video id="rawVideo" preload="metadata" playsinline controls></video>
+        <span class="stamp" id="stamp">00:00.0</span>
+      </div>
+      <p class="cap">Click a timecode to play the raw recording from there.</p>
+      <dl>
+        <dt>Raw length</dt><dd id="factLength"></dd>
+        <dt>Lines</dt><dd id="factLines"></dd>
+        <dt>Dropped</dt><dd id="factDropped"></dd>
+        <dt>Cues</dt><dd id="factCues"></dd>
+      </dl>
+      <button class="btn primary" type="button" id="approveBtn">Approve script</button>
+      <p class="next" id="nextNote"></p>
+      <p class="saved" id="savedNote" aria-live="polite"></p>
+    </aside>
+  </div>
+
+  <div id="paneDone" hidden>
+    <div class="screening">
+      <video id="finalVideo" controls preload="metadata" playsinline></video>
+    </div>
+    <div class="done-body">
+      <p class="verdict" id="verdict"></p>
+      <ul class="problems" id="problems" hidden></ul>
+      <div class="actions">
+        <a class="btn primary" id="dlVideo" download>Download video</a>
+        <a class="btn ghost" id="dlSrt" download>Subtitles (.srt)</a>
+        <a class="btn ghost" id="dlThumb" download>Thumbnail</a>
+        <a class="btn ghost" id="dlReport" download>Report</a>
+        <button class="btn ghost" type="button" id="revealBtn">Show in Finder</button>
+      </div>
+      <section class="cuts" id="cutsBox" hidden>
+        <h2>Voice cuts</h2>
+        <p class="cuts-note">Each picture shows the 3 s around a cut in the voice: the frames on top, the sound below, the cut in red. Click one to open it full size.</p>
+        <ol class="shots" id="cutShots"></ol>
+      </section>
+      <section class="cuts" id="videoCutsBox" hidden>
+        <h2>Video cuts</h2>
+        <p class="cuts-note">Each picture shows the 3 s around a place where the video skips part of the recording, marked in amber. Cuts less than 0.1 s apart share a picture. A cut that makes the picture jump is also listed as a problem above. Click one to open it full size.</p>
+        <ol class="shots" id="videoCutShots"></ol>
+      </section>
+      <details>
+        <summary>What changed</summary>
+        <ul id="changes"></ul>
+      </details>
+      <button class="link again" type="button" id="reopenBtn">Change the script and render again</button>
+    </div>
+  </div>
+
+  <div id="paneError" hidden>
+    <div class="fault" role="alert">
+      <h2 id="errMessage"></h2>
+      <p id="errHint"></p>
+      <div class="btns">
+        <button class="btn primary" type="button" id="retryBtn">Try again</button>
+        <button class="btn ghost" type="button" id="logBtn" aria-expanded="false">Show the log</button>
+      </div>
+      <ol class="log full" id="fullLog" hidden></ol>
+    </div>
+  </div>
+</section>
+
+<section id="voice" class="wrap" hidden>
+  <nav class="crumbs"><a href="#/">All videos</a></nav>
+  <h1 class="job-title">Voice test</h1>
+  <p class="job-meta" id="vtMeta"></p>
+
+  <div class="vt">
+    <article class="sheet vt-sheet">
+      <p class="vt-label">Every take reads this paragraph</p>
+      <p class="vt-text" id="vtText"></p>
+    </article>
+
+    <div class="vt-bar" id="vtBar" hidden>
+      <button class="btn primary" type="button" id="vtRecord"></button>
+      <p class="quiet" id="vtCost"></p>
+    </div>
+    <p class="vt-error" id="vtError" role="alert" hidden></p>
+
+    <ol class="takes" id="takes"></ol>
+    <p class="vt-saved" id="vtSaved" aria-live="polite"></p>
+  </div>
+</section>
+
+</main>
+
+<script src="/app.js" type="module"></script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+node_modules/
+.env
+jobs/
+cache/
+tests/fixtures/*.mp4
+tests/fixtures/*.wav
+.DS_Store
